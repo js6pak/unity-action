@@ -25749,38 +25749,64 @@ const io = __nccwpck_require__(7436);
 const path = __nccwpck_require__(1017);
 const fs = __nccwpck_require__(7147);
 const pidFile = path.join(process.env.RUNNER_TEMP, 'unity-process-id.txt');
-let isCancelled = false;
-async function ExecUnity(editorPath, args) {
+async function ExecUnity(editorPath, args, tryCount = 1) {
+    let isCancelled = false;
     const logPath = getLogFilePath(args);
-    process.once('SIGINT', async () => {
+    const cancelListener = async () => {
         await tryKillPid(pidFile);
         isCancelled = true;
-    });
-    process.once('SIGTERM', async () => {
-        await tryKillPid(pidFile);
-        isCancelled = true;
-    });
+    };
+    process.once('SIGINT', cancelListener);
+    process.once('SIGTERM', cancelListener);
     let exitCode = 0;
-    switch (process.platform) {
-        default:
-            const unity = __nccwpck_require__.ab + "unity.ps1";
-            const pwsh = await io.which('pwsh', true);
-            exitCode = await exec.exec(`"${pwsh}" -Command`, [`${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`], {
-                listeners: {
-                    stdline: (data) => {
-                        const line = data.toString().trim();
-                        if (line && line.length > 0) {
-                            core.info(line);
+    let flaky = false;
+    try {
+        switch (process.platform) {
+            default:
+                const unity = __nccwpck_require__.ab + "unity.ps1";
+                const pwsh = await io.which('pwsh', true);
+                exitCode = await exec.exec(`"${pwsh}" -Command`, [`${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`], {
+                    listeners: {
+                        stdline: (data) => {
+                            const line = data.toString().trim();
+                            if (line && line.length > 0) {
+                                core.info(line);
+                            }
+                        },
+                        errline: (data) => {
+                            const line = data.toString().trim();
+                            if (line && line.length > 0) {
+                                core.info(line);
+                                if (line.includes("Unhandled Exception: System.OverflowException: Number overflow.") ||
+                                    line.includes("Unhandled Exception: System.OutOfMemoryException: Out of memory")) {
+                                    flaky = true;
+                                }
+                            }
                         }
-                    }
-                },
-                silent: true,
-                ignoreReturnCode: true
-            });
-            break;
+                    },
+                    silent: true,
+                    ignoreReturnCode: true
+                });
+                break;
+        }
+    }
+    finally {
+        process.removeListener('SIGINT', cancelListener);
+        process.removeListener('SIGTERM', cancelListener);
     }
     if (!isCancelled) {
         await tryKillPid(pidFile);
+        if (flaky) {
+            if (tryCount <= 25) {
+                tryCount++;
+                core.warning(`Unity crashed in a flaky manner, trying again for the ${tryCount} time`);
+                await ExecUnity(editorPath, args, tryCount);
+                return;
+            }
+            else {
+                throw new Error("Unity crashed in a flaky manner too many times");
+            }
+        }
         if (exitCode !== 0) {
             throw Error(`Unity failed with exit code ${exitCode}`);
         }
