@@ -24,7 +24,8 @@ export async function ValidateInputs(): Promise<[string, string[]]> {
     if (!inputArgs.includes(`-batchmode`)) {
         args.push(`-batchmode`);
     }
-    const match = path.basename(editorPath).match(/(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/);
+    // /home/runner/Unity/Hub/Editor/6000.1.11f1/Editor/Unity
+    const match = editorPath.match(/(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/);
     if (!match) {
         throw Error(`Invalid Unity Editor Path: ${editorPath}`);
     }

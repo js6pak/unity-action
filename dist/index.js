@@ -25675,7 +25675,7 @@ async function ValidateInputs() {
     if (!inputArgs.includes(`-batchmode`)) {
         args.push(`-batchmode`);
     }
-    const match = path.basename(editorPath).match(/(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/);
+    const match = editorPath.match(/(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/);
     if (!match) {
         throw Error(`Invalid Unity Editor Path: ${editorPath}`);
     }
