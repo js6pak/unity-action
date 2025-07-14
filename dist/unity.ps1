@@ -32,7 +32,7 @@ try {
     $processId | Out-File -FilePath "$env:RUNNER_TEMP/unity-process-id.txt"
     while (-not $process.HasExited) {
         Start-Sleep -Milliseconds 1
-        Receive-Job $ljob
+        Receive-Job $lJob
         if ($null -eq (Get-Process -Id $processId -ErrorAction SilentlyContinue)) { break }
     }
     $fileLocked = $true
@@ -70,9 +70,9 @@ try {
         Start-Sleep -Milliseconds 1
     } while ($fileLocked)
     Start-Sleep -Milliseconds 1
-    Receive-Job $ljob
-    Stop-Job $ljob
-    Remove-Job $ljob
+    Receive-Job $lJob
+    Stop-Job $lJob
+    Remove-Job $lJob
     $exitCode = [int]$process.ExitCode
     Write-Host "::debug::Unity Process Exit Code: $exitCode"
     exit $exitCode
