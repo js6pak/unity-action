@@ -25657,7 +25657,6 @@ const WORKSPACE = process.env.GITHUB_WORKSPACE;
 const UNITY_EDITOR_PATH = process.env.UNITY_EDITOR_PATH;
 const UNITY_PROJECT_PATH = process.env.UNITY_PROJECT_PATH;
 async function ValidateInputs() {
-    var _a;
     let editorPath = core.getInput(`editor-path`) || UNITY_EDITOR_PATH;
     if (!editorPath) {
         throw Error(`Missing editor-path or UNITY_EDITOR_PATH`);
@@ -25675,16 +25674,7 @@ async function ValidateInputs() {
     if (!inputArgs.includes(`-batchmode`)) {
         args.push(`-batchmode`);
     }
-    const match = editorPath.match(/(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/);
-    if (!match) {
-        throw Error(`Invalid Unity Editor Path: ${editorPath}`);
-    }
-    const unityMajorVersion = (_a = match.groups) === null || _a === void 0 ? void 0 : _a.major;
-    if (!unityMajorVersion) {
-        throw Error(`Invalid Unity Major Version: ${editorPath}`);
-    }
-    const autoAddNographics = parseInt(unityMajorVersion, 10) > 2018;
-    if (autoAddNographics && !inputArgs.includes(`-nographics`) && !inputArgs.includes(`-force-graphics`)) {
+    if (!inputArgs.includes(`-nographics`) && !inputArgs.includes(`-force-graphics`)) {
         args.push(`-nographics`);
     }
     if (!inputArgs.includes(`-buildTarget`)) {
