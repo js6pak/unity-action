@@ -25765,7 +25765,12 @@ async function ExecUnity(editorPath, args, tryCount = 1) {
             default:
                 const unity = __nccwpck_require__.ab + "unity.ps1";
                 const pwsh = await io.which('pwsh', true);
-                exitCode = await exec.exec(`"${pwsh}" -Command`, [`${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`], {
+                let commandLine = `"${pwsh}" -Command ${unity} -EditorPath '${editorPath}' -Arguments '${args.join(` `)}' -LogPath '${logPath}'`;
+                if (process.platform === `linux`) {
+                    const xvfbRun = await io.which('xvfb-run', true);
+                    commandLine = `"${xvfbRun}" ${commandLine}`;
+                }
+                exitCode = await exec.exec(commandLine, null, {
                     listeners: {
                         stdline: (data) => {
                             const line = data.toString().trim();
